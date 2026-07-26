@@ -1,0 +1,39 @@
+pipeline {
+
+    agent any
+
+    stages {
+
+        stage('Build') {
+
+            steps {
+
+                sh 'echo "===== BUILD STARTED ====="'
+                sh 'pwd'
+                sh 'ls -la'
+                sh 'python3 --version'
+                sh 'pip3 install -r requirements.txt'
+                sh 'echo "===== BUILD SUCCESSFUL ====="'
+
+            }
+        }
+
+    }
+
+    post {
+
+        success {
+            echo 'Pipeline Completed Successfully'
+        }
+
+        failure {
+            echo 'Pipeline Failed'
+        }
+
+        always {
+            echo 'Pipeline Finished'
+        }
+
+    }
+
+}
