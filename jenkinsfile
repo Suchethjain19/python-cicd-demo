@@ -21,20 +21,25 @@ pipeline {
     
 stage('Deploy') {
     steps {
-        sh '''
-        echo "===== DEPLOY STARTED ====="
+        sshagent(credentials: ['app-server-key']) {
+            sh '''
+            ssh -tt -o StrictHostKeyChecking=no ec2-user@172.31.15.94 << EOF
 
-        sudo systemctl restart flask-app
+            cd /home/ec2-user/python-cicd-demo
 
-        sudo systemctl status flask-app --no-pager
+            git pull origin main
 
-        echo "===== DEPLOY SUCCESSFUL ====="
-        '''
-    }
+            pip3 install -r requirements.txt
 
+            sudo systemctl restart flask-app
+
+            sudo systemctl status flask-app --no-pager
+
+            EOF
+            '''
+        }
     }
 }
-
     post {
 
         success {
