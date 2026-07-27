@@ -17,19 +17,19 @@ pipeline {
 
             }
         }
-    stage('Deploy') {
+    
+stage('Deploy') {
     steps {
         sh '''
         echo "===== DEPLOY STARTED ====="
 
-        pkill -f app.py || true
+        sudo systemctl restart flask-app
 
-        nohup python3 app.py > app.log 2>&1 &
+        sudo systemctl status flask-app --no-pager
 
         echo "===== DEPLOY SUCCESSFUL ====="
         '''
     }
-}
 
     }
 
