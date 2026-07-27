@@ -17,6 +17,19 @@ pipeline {
 
             }
         }
+    stage('Deploy') {
+    steps {
+        sh '''
+        echo "===== DEPLOY STARTED ====="
+
+        pkill -f app.py || true
+
+        nohup python3 app.py > app.log 2>&1 &
+
+        echo "===== DEPLOY SUCCESSFUL ====="
+        '''
+    }
+}
 
     }
 
@@ -37,3 +50,4 @@ pipeline {
     }
 
 }
+
