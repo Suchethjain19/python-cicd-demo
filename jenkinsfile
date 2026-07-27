@@ -9,6 +9,7 @@ pipeline {
             steps {
 
                 sh 'echo "===== BUILD STARTED ====="'
+                sh 'whoami'
                 sh 'pwd'
                 sh 'ls -la'
                 sh 'python3 --version'
