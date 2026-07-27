@@ -5,9 +5,7 @@ pipeline {
     stages {
 
         stage('Build') {
-
             steps {
-
                 sh 'echo "===== BUILD STARTED ====="'
                 sh 'whoami'
                 sh 'pwd'
@@ -15,34 +13,26 @@ pipeline {
                 sh 'python3 --version'
                 sh 'pip3 install -r requirements.txt'
                 sh 'echo "===== BUILD SUCCESSFUL ====="'
-
             }
         }
-    
-stage('Deploy') {
-    steps {
-        sshagent(credentials: ['app-server-key']) {
-            sh '''
-            ssh -tt -o StrictHostKeyChecking=no ec2-user@172.31.15.94 << EOF
 
-            cd /home/ec2-user/python-cicd-demo
-
-            git pull origin main
-
-            pip3 install -r requirements.txt
-
-            sudo systemctl restart flask-app
-
-            sudo systemctl status flask-app --no-pager
-
-            EOF
-            '''
+        stage('Deploy') {
+            steps {
+                sshagent(credentials: ['app-server-key']) {
+                    sh '''
+                    ssh -o StrictHostKeyChecking=no ec2-user@172.31.15.94 \
+                    "cd /home/ec2-user/python-cicd-demo && \
+                    git pull origin main && \
+                    pip3 install -r requirements.txt && \
+                    sudo systemctl restart flask-app && \
+                    sudo systemctl status flask-app --no-pager"
+                    '''
+                }
+            }
         }
-}
     }
-}
-    post {
 
+    post {
         success {
             echo 'Pipeline Completed Successfully'
         }
@@ -54,8 +44,5 @@ stage('Deploy') {
         always {
             echo 'Pipeline Finished'
         }
-
     }
-
 }
-
