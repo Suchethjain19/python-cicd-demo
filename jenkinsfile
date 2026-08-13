@@ -1,3 +1,4 @@
+
 pipeline {
 
     agent any
@@ -26,13 +27,22 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        echo "$DOCKER_PASSWORD" | docker login \
-                            -u "$DOCKER_USERNAME" \
+                        echo "===== DOCKER LOGIN ====="
+
+                        printf '%s' "$DOCKER_PASSWORD" | docker login \
+                            --username "$DOCKER_USERNAME" \
                             --password-stdin
 
-                        docker build -t suchethjain19/python-cicd-demo:v2 .
+                        echo "===== DOCKER BUILD ====="
+
+                        docker build \
+                            -t suchethjain19/python-cicd-demo:v2 .
+
+                        echo "===== DOCKER PUSH ====="
 
                         docker push suchethjain19/python-cicd-demo:v2
+
+                        echo "===== DOCKER PUSH SUCCESSFUL ====="
                     '''
                 }
             }
@@ -42,12 +52,12 @@ pipeline {
             steps {
                 sshagent(credentials: ['app-server-key']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@172.31.15.94 \
-                    "cd /home/ec2-user/python-cicd-demo && \
-                    git pull origin main && \
-                    pip3 install -r requirements.txt && \
-                    sudo systemctl restart flask-app && \
-                    sudo systemctl status flask-app --no-pager"
+                        ssh -o StrictHostKeyChecking=no ec2-user@172.31.15.94 \
+                        "cd /home/ec2-user/python-cicd-demo && \
+                        git pull origin main && \
+                        pip3 install -r requirements.txt && \
+                        sudo systemctl restart flask-app && \
+                        sudo systemctl status flask-app --no-pager"
                     '''
                 }
             }
@@ -55,6 +65,7 @@ pipeline {
     }
 
     post {
+
         success {
             echo 'Pipeline Completed Successfully'
         }
