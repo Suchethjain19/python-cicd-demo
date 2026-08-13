@@ -1,4 +1,3 @@
-
 pipeline {
 
     agent any
@@ -19,32 +18,18 @@ pipeline {
 
         stage('Docker Build & Push') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
-                    sh '''
-                        echo "===== DOCKER LOGIN ====="
+                sh '''
+                    echo "===== DOCKER BUILD ====="
 
-                        printf '%s' "$DOCKER_PASSWORD" | docker login \
-                            --username "$DOCKER_USERNAME" \
-                            --password-stdin
+                    docker build \
+                        -t suchethjain19/python-cicd-demo:v2 .
 
-                        echo "===== DOCKER BUILD ====="
+                    echo "===== DOCKER PUSH ====="
 
-                        docker build \
-                            -t suchethjain19/python-cicd-demo:v2 .
+                    docker push suchethjain19/python-cicd-demo:v2
 
-                        echo "===== DOCKER PUSH ====="
-
-                        docker push suchethjain19/python-cicd-demo:v2
-
-                        echo "===== DOCKER PUSH SUCCESSFUL ====="
-                    '''
-                }
+                    echo "===== DOCKER PUSH SUCCESSFUL ====="
+                '''
             }
         }
 
