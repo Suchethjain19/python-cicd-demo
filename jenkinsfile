@@ -33,16 +33,33 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to EC2 #2') {
             steps {
                 sshagent(credentials: ['app-server-key']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ec2-user@172.31.15.94 \
-                        "cd /home/ec2-user/python-cicd-demo && \
-                        git pull origin main && \
-                        pip3 install -r requirements.txt && \
-                        sudo systemctl restart flask-app && \
-                        sudo systemctl status flask-app --no-pager"
+                        echo "===== DEPLOYING TO EC2 #2 ====="
+
+                        ssh -o StrictHostKeyChecking=no ec2-user@172.31.15.94 "
+                            echo '===== PULLING IMAGE FROM DOCKER HUB =====' &&
+                            docker pull suchethjain19/python-cicd-demo:v2 &&
+
+                            echo '===== STOPPING OLD CONTAINER =====' &&
+                            docker stop python-cicd-demo || true &&
+
+                            echo '===== REMOVING OLD CONTAINER =====' &&
+                            docker rm python-cicd-demo || true &&
+
+                            echo '===== STARTING NEW CONTAINER =====' &&
+                            docker run -d \
+                                --name python-cicd-demo \
+                                -p 8000:8000 \
+                                suchethjain19/python-cicd-demo:v2 &&
+
+                            echo '===== CONTAINER STARTED =====' &&
+                            docker ps
+                        "
+
+                        echo "===== DEPLOYMENT SUCCESSFUL ====="
                     '''
                 }
             }
