@@ -16,6 +16,28 @@ pipeline {
             }
         }
 
+        stage('Docker Build & Push') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login \
+                            -u "$DOCKER_USERNAME" \
+                            --password-stdin
+
+                        docker build -t suchethjain19/python-cicd-demo:v2 .
+
+                        docker push suchethjain19/python-cicd-demo:v2
+                    '''
+                }
+            }
+        }
+
         stage('Deploy') {
             steps {
                 sshagent(credentials: ['app-server-key']) {
