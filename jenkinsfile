@@ -52,7 +52,7 @@ pipeline {
                             echo '===== STARTING NEW CONTAINER =====' &&
                             docker run -d \
                                 --name python-cicd-demo \
-                                -p 8000:8000 \
+                                -p 8001:8000 \
                                 suchethjain19/python-cicd-demo:v2 &&
 
                             echo '===== CONTAINER STARTED =====' &&
