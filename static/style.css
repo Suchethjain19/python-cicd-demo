@@ -1,0 +1,102 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #ffffff;
+    min-height: 100vh;
+}
+
+/* Header */
+
+header {
+    padding: 25px 8%;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+header h2 {
+    font-size: 26px;
+}
+
+/* Hero */
+
+.hero {
+    text-align: center;
+    padding: 120px 20px;
+}
+
+.hero h1 {
+    font-size: 55px;
+    max-width: 900px;
+    margin: auto;
+    line-height: 1.15;
+}
+
+.hero p {
+    font-size: 20px;
+    margin-top: 25px;
+    opacity: 0.9;
+}
+
+/* About */
+
+.about {
+    background: #ffffff;
+    color: #333333;
+    text-align: center;
+    padding: 70px 20px;
+}
+
+.about h2 {
+    color: #764ba2;
+    font-size: 35px;
+    margin-bottom: 20px;
+}
+
+.about p {
+    max-width: 650px;
+    margin: auto;
+    font-size: 18px;
+    line-height: 1.7;
+}
+
+.pipeline {
+    display: inline-block;
+    margin-top: 35px;
+    padding: 20px 30px;
+    border-radius: 15px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Footer */
+
+footer {
+    text-align: center;
+    padding: 25px;
+    background: #22223b;
+    font-size: 14px;
+}
+
+/* Mobile */
+
+@media (max-width: 700px) {
+
+    .hero {
+        padding: 80px 20px;
+    }
+
+    .hero h1 {
+        font-size: 38px;
+    }
+
+    .hero p {
+        font-size: 17px;
+    }
+}
