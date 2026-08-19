@@ -1,7 +1,21 @@
 pipeline {
 
     agent any
+environment {
+    AWS_REGION = 'eu-north-1'
 
+    AWS_ACCOUNT_ID = '648597472772'
+
+    ECR_REPO = '648597472772.dkr.ecr.eu-north-1.amazonaws.com/python-cicd-demo'
+
+    ECS_CLUSTER = 'python-cicd-cluster'
+
+    ECS_SERVICE = 'python-cicd-demo-service'
+
+    TASK_DEFINITION = 'python-cicd-demo'
+
+    CONTAINER_NAME = 'flask-app'
+}
     stages {
 
         stage('Build') {
