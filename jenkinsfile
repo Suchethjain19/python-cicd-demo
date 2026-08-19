@@ -1,32 +1,53 @@
 pipeline {
 
     agent any
-environment {
-    AWS_REGION = 'eu-north-1'
 
-    AWS_ACCOUNT_ID = '648597472772'
+    environment {
+        AWS_REGION = 'eu-north-1'
 
-    ECR_REPO = '648597472772.dkr.ecr.eu-north-1.amazonaws.com/python-cicd-demo'
+        ECR_REPO = '648597472772.dkr.ecr.eu-north-1.amazonaws.com/python-cicd-demo'
 
-    ECS_CLUSTER = 'python-cicd-cluster'
+        ECS_CLUSTER = 'python-cicd-cluster'
 
-    ECS_SERVICE = 'python-cicd-demo-service'
+        ECS_SERVICE = 'python-cicd-demo-service'
 
-    TASK_DEFINITION = 'python-cicd-demo'
+        TASK_DEFINITION = 'python-cicd-demo'
 
-    CONTAINER_NAME = 'flask-app'
-}
+        CONTAINER_NAME = 'flask-app'
+    }
+
     stages {
 
         stage('Build') {
             steps {
-                sh 'echo "===== BUILD STARTED ====="'
-                sh 'whoami'
-                sh 'pwd'
-                sh 'ls -la'
-                sh 'python3 --version'
-                sh 'pip3 install -r requirements.txt'
-                sh 'echo "===== BUILD SUCCESSFUL ====="'
+                sh '''
+                    echo "===== BUILD STARTED ====="
+
+                    whoami
+                    pwd
+                    ls -la
+                    python3 --version
+
+                    pip3 install -r requirements.txt
+
+                    echo "===== BUILD SUCCESSFUL ====="
+                '''
+            }
+        }
+
+        stage('ECR Login') {
+            steps {
+                sh '''
+                    echo "===== ECR LOGIN ====="
+
+                    aws ecr get-login-password \
+                        --region $AWS_REGION | \
+                    docker login \
+                        --username AWS \
+                        --password-stdin $ECR_REPO
+
+                    echo "===== ECR LOGIN SUCCESSFUL ====="
+                '''
             }
         }
 
@@ -36,46 +57,92 @@ environment {
                     echo "===== DOCKER BUILD ====="
 
                     docker build \
-                        -t suchethjain19/python-cicd-demo:v2 .
+                        -t $ECR_REPO:$BUILD_NUMBER .
 
                     echo "===== DOCKER PUSH ====="
 
-                    docker push suchethjain19/python-cicd-demo:v2
+                    docker push \
+                        $ECR_REPO:$BUILD_NUMBER
 
-                    echo "===== DOCKER PUSH SUCCESSFUL ====="
+                    echo "===== ECR PUSH SUCCESSFUL ====="
                 '''
             }
         }
 
-        stage('Deploy to EC2 #2') {
+        stage('Create ECS Task Definition') {
             steps {
-                sshagent(credentials: ['app-server-key']) {
-                    sh '''
-                        echo "===== DEPLOYING TO EC2 #2 ====="
+                sh '''
+                    echo "===== GETTING CURRENT TASK DEFINITION ====="
 
-                        ssh -o StrictHostKeyChecking=no ec2-user@172.31.15.94 "
-                            echo '===== PULLING IMAGE FROM DOCKER HUB =====' &&
-                            docker pull suchethjain19/python-cicd-demo:v2 &&
+                    aws ecs describe-task-definition \
+                        --task-definition $TASK_DEFINITION \
+                        --region $AWS_REGION \
+                        --query taskDefinition \
+                        --output json > task-definition.json
 
-                            echo '===== STOPPING OLD CONTAINER =====' &&
-                            docker stop python-cicd-demo || true &&
+                    echo "===== CREATING NEW TASK DEFINITION ====="
 
-                            echo '===== REMOVING OLD CONTAINER =====' &&
-                            docker rm python-cicd-demo || true &&
+                    jq --arg IMAGE "$ECR_REPO:$BUILD_NUMBER" '
+                        {
+                            family: .family,
+                            taskRoleArn: .taskRoleArn,
+                            executionRoleArn: .executionRoleArn,
+                            networkMode: .networkMode,
+                            containerDefinitions: .containerDefinitions,
+                            volumes: .volumes,
+                            placementConstraints: .placementConstraints,
+                            requiresCompatibilities: .requiresCompatibilities,
+                            cpu: .cpu,
+                            memory: .memory,
+                            runtimePlatform: .runtimePlatform,
+                            proxyConfiguration: .proxyConfiguration,
+                            pidMode: .pidMode,
+                            ipcMode: .ipcMode,
+                            inferenceAccelerators: .inferenceAccelerators,
+                            ephemeralStorage: .ephemeralStorage
+                        }
+                        | .containerDefinitions[0].image = $IMAGE
+                        | with_entries(select(.value != null))
+                    ' task-definition.json > new-task-definition.json
 
-                            echo '===== STARTING NEW CONTAINER =====' &&
-                            docker run -d \
-                                --name python-cicd-demo \
-                                -p 8001:8000 \
-                                suchethjain19/python-cicd-demo:v2 &&
+                    echo "===== NEW IMAGE ====="
 
-                            echo '===== CONTAINER STARTED =====' &&
-                            docker ps
-                        "
+                    jq '.containerDefinitions[0].image' new-task-definition.json
 
-                        echo "===== DEPLOYMENT SUCCESSFUL ====="
-                    '''
-                }
+                    echo "===== REGISTERING NEW TASK DEFINITION ====="
+
+                    aws ecs register-task-definition \
+                        --cli-input-json file://new-task-definition.json \
+                        --region $AWS_REGION
+
+                    echo "===== TASK DEFINITION REGISTERED ====="
+                '''
+            }
+        }
+
+        stage('Deploy to ECS') {
+            steps {
+                sh '''
+                    echo "===== GETTING NEW TASK DEFINITION REVISION ====="
+
+                    NEW_REVISION=$(aws ecs describe-task-definition \
+                        --task-definition $TASK_DEFINITION \
+                        --region $AWS_REGION \
+                        --query 'taskDefinition.revision' \
+                        --output text)
+
+                    echo "NEW TASK DEFINITION REVISION: $NEW_REVISION"
+
+                    echo "===== UPDATING ECS SERVICE ====="
+
+                    aws ecs update-service \
+                        --cluster $ECS_CLUSTER \
+                        --service $ECS_SERVICE \
+                        --task-definition $TASK_DEFINITION:$NEW_REVISION \
+                        --region $AWS_REGION
+
+                    echo "===== ECS DEPLOYMENT STARTED ====="
+                '''
             }
         }
     }
@@ -95,3 +162,5 @@ environment {
         }
     }
 }
+
+   
